@@ -1,0 +1,19 @@
+Package: VBJM
+Type: Package
+Title: Variational Inference for Joint Model
+Version: 0.1.0
+Author: Jiehuan [aut, cre]
+Maintainer: Jiehuan <jiehuan.sun@gmail.com>
+Description: Variational inference for joint model
+    is a fast method to deal with a large number of biomarkers.
+Depends: R (>= 3.6.0)
+Imports: Rcpp (>= 1.0.0)
+Suggests: knitr
+VignetteBuilder: knitr
+LinkingTo: Rcpp, RcppArmadillo, RcppEnsmallen
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.1
+NeedsCompilation: yes
+Packaged: 2021-03-19 03:43:08 UTC; JiehuanSun

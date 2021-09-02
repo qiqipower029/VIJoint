@@ -1,0 +1,3 @@
+useDynLib(VBJM)
+exportPattern("^[[:alpha:]]+")
+importFrom(Rcpp, evalCpp)
