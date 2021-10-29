@@ -5,8 +5,14 @@ require(survival)
 require(JM)
 require(Matrix)
 require(statmod)
+require(MASS)
 
 #-------------------------Scenario 1-------------------------#
+# n = 500, 1500, 5000
+# K = 1
+# Sigma = 0.5^2I
+
+
 sig = 0.1 # sd for epsilon
 Ngene = 1 # number of genes
 Ninfo = 1 # signal=Ngene, no noise
@@ -15,8 +21,15 @@ n = 500 # number of subjects
 lam = 3 # Weibull parameter
 theta = 10 # Weibull parameter
 
+Sigma = matrix(c(
+  0.25,0,
+  0,0.25
+), 2, 2) # variance-covariance matrix of betas for each subject
+
+set.seed(1029) # seed setting makes the simulation data reproducible
+
 AB1.list = lapply(1:n,function(i){
-  cbind(runif(Ngene,0,1), runif(Ngene,0,1))
+  mvrnorm(n = 1, rep(0, 2), Sigma = Sigma)
 })
 
 Y = rep(0,n)
