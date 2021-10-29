@@ -59,7 +59,66 @@ simu.fit = mjoint(
 
 summary(simu.fit)
 
-#-------------------Using pbc2----------------#
+
+#--------JM package---------#
+data.list = list()
+para.list = list()
+
+marker.name = sort(unique(LongData$item))
+beta.list = list()
+mu.list = list()
+V.list = list()
+sig.vec = rep(NA, length(marker.name))
+alpha.vec = rep(NA,length(marker.name))
+
+for(i in seq_along(marker.name)){
+  #i = 1
+  print(i)
+  data.tmp = LongData[LongData$item==marker.name[i],]
+  
+  fitLME = lme(value ~ years ,  random = ~ years | ID,
+               data = data.tmp, control=lmeControl(opt='optim'))
+  beta.list[[i]] = matrix(fitLME$coefficients$fixed,ncol=1)
+  mu.list[[i]] = fitLME$coefficients$random$ID
+  sig.vec[i] = fitLME$sigma
+  V.list[[i]] = as.matrix(getVarCov(fitLME))
+
+  
+  fitSURV = survreg(Surv(ftime, fstat) ~  x, data = SurvData, x = TRUE)
+  theta = exp(fitSURV$coefficients[1])
+  lambda = 1/fitSURV$scale
+  gamma = -fitSURV$coefficients[2]/fitSURV$scale
+  ## joint model 
+  fitJOINT = jointModel(fitLME, fitSURV, timeVar = "years") 
+  alpha.vec[i] = fitJOINT$coefficients$alpha
+}
+
+V.list = lapply(V.list, function(x){
+  x[1:nrow(x),1:ncol(x),drop=FALSE]
+})
+
+Sigma = as.matrix(bdiag(V.list))
+V.list = matrix(rep(list(Sigma),nrow(SurvData)))
+
+mu.list = lapply(mu.list, function(x){
+  lapply(1:nrow(x),function(i){
+    matrix(x[1,],ncol=1)
+  })
+})
+mu.list = do.call(cbind, mu.list)
+
+para.list[["mu"]] = mu.list
+para.list[["V"]] = V.list
+para.list[["Sigma"]] = Sigma
+para.list[["sig2"]] = sig.vec
+
+para.list[["beta"]] = beta.list
+para.list[["weib"]] = c(lambda, theta)
+para.list[["gamma"]] = gamma
+para.list[["alpha"]] = alpha.vec
+para.list
+
+#--------------------------------Using pbc2--------------------------------------#
 #--------joineRML package---------#
 data("pbc2")
 placebo <- subset(pbc2, drug == "placebo") 
@@ -109,30 +168,14 @@ VBJM_init <- function(LongData=NULL, SurvData=NULL,n_points = 5){
     mu.list[[i]] = fitLME$coefficients$random$ID
     sig.vec[i] = fitLME$sigma
     V.list[[i]] = as.matrix(getVarCov(fitLME))
-    ## JM package require to use lme ##
-    ## otherwise, can use lmer as optional ##
-    # fitLME = lmer(value ~ years +  (years | ID), 
-    #              data = data.tmp)
-    # beta.list[[i]] = matrix(summary(fitLME)$coef[,1],ncol=1)
-    # sig.vec[i] = summary(fitLME)$sigma
-    # mu.list[[i]] = ranef(fitLME)$ID
-    # V.list[[i]] = as.matrix(bdiag(VarCorr(fitLME)))
+
     
     fitSURV = survreg(Surv(ftime, fstat) ~  x, data = SurvData, x = TRUE)
-    # There are multiple ways to parameterize a Weibull distribution. The survreg 
-    # function embeds it in a general location-scale family, which is a 
-    # different parameterization than the rweibull function, and often leads
-    # to confusion.
-    #   survreg's scale  =    1/(rweibull shape)
-    #   survreg's intercept = log(rweibull scale)
+
     theta = exp(fitSURV$coefficients[1])
     lambda = 1/fitSURV$scale
     gamma = -fitSURV$coefficients[2]/fitSURV$scale
-    ## for gamma; can also use coxph
-    # fitSurv = coxph(Surv(ftime, fstat)~x, data=SurvData)
-    # gamma = matrix(fitSurv$coefficients,ncol=1)
-    
-    ## joint model 
+
     fitJOINT = jointModel(fitLME, fitSURV, timeVar = "year") 
     alpha.vec[i] = fitJOINT$coefficients$alpha
   }
@@ -253,3 +296,66 @@ system.time({
 
 
 res_summary2 = VBJM_get_summary(marker.name =init_list2$marker.name, res=res2)
+
+
+#-------------------JM package-------------------------#
+
+data.list = list()
+para.list = list()
+
+## run JM for each biomarker to initialize 
+marker.name = sort(unique(placebo2$item))
+beta.list = list()
+mu.list = list()
+V.list = list()
+sig.vec = rep(NA, length(marker.name))
+alpha.vec = rep(NA,length(marker.name))
+
+for(i in seq_along(marker.name)){
+  #i = 1
+  print(i)
+  data.tmp = placebo2[placebo2$item==marker.name[i],]
+  
+  fitLME = lme(value ~ year ,  random = ~ year | ID,
+               data = data.tmp, control=lmeControl(opt='optim'))
+  
+  beta.list[[i]] = matrix(fitLME$coefficients$fixed,ncol=1)
+  mu.list[[i]] = fitLME$coefficients$random$ID
+  sig.vec[i] = fitLME$sigma
+  V.list[[i]] = as.matrix(getVarCov(fitLME))
+  
+  
+  fitSURV = survreg(Surv(ftime, fstat) ~  x, data = surv2, x = TRUE)
+  
+  theta = exp(fitSURV$coefficients[1])
+  lambda = 1/fitSURV$scale
+  gamma = -fitSURV$coefficients[2]/fitSURV$scale
+  
+  fitJOINT = jointModel(fitLME, fitSURV, timeVar = "year") 
+  alpha.vec[i] = fitJOINT$coefficients$alpha
+}
+
+V.list = lapply(V.list, function(x){
+  x[1:nrow(x),1:ncol(x),drop=FALSE]
+})
+
+Sigma = as.matrix(bdiag(V.list))
+V.list = matrix(rep(list(Sigma),nrow(SurvData)))
+
+mu.list = lapply(mu.list, function(x){
+  lapply(1:nrow(x),function(i){
+    matrix(x[1,],ncol=1)
+  })
+})
+mu.list = do.call(cbind, mu.list)
+
+para.list[["mu"]] = mu.list
+para.list[["V"]] = V.list
+para.list[["Sigma"]] = Sigma
+para.list[["sig2"]] = sig.vec
+
+para.list[["beta"]] = beta.list
+para.list[["weib"]] = c(lambda, theta)
+para.list[["gamma"]] = gamma
+para.list[["alpha"]] = alpha.vec
+para.list
