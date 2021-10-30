@@ -22,15 +22,19 @@ lam = 3 # Weibull parameter
 theta = 10 # Weibull parameter
 
 Sigma = matrix(c(
-  0.25,0,
-  0,0.25
+  0.01,0,
+  0,0.01
 ), 2, 2) # variance-covariance matrix of betas for each subject
 
-set.seed(1029) # seed setting makes the simulation data reproducible
+set.seed(2021) # seed setting makes the simulation data reproducible
 
 AB1.list = lapply(1:n,function(i){
-  mvrnorm(n = 1, rep(0, 2), Sigma = Sigma)
+  matrix(mvrnorm(n = Ngene, rep(2, 2), Sigma = Sigma), nrow = 1)
 })
+
+AB1.list = lapply(1:n,function(i){
+  cbind(runif(Ngene,0,1), runif(Ngene,0,1))
+}) 
 
 Y = rep(0,n)
 x = runif(n,-1,1)
@@ -42,8 +46,8 @@ for(i in 1:n){
   Btrue = AB1[[2]]
   
   logr = log(runif(1))
-  ff <- function(t){(lam/theta^lam)*t^(lam-1)*exp(eff*(Atrue + Btrue*t) + beta*x[i])}
-  f = function(x){ integrate(ff,0,x)$value + logr }
+  ff <- function(t){(lam/theta^lam)*t^(lam-1)*exp(eff*(Atrue + Btrue*t) + beta*x[i])} # hazard function h(t)
+  f = function(x){ integrate(ff,0,x)$value + logr } # Hazard function H(t)
   Y[i] = uniroot(f,c(0,50))$root
 }
 
@@ -53,7 +57,7 @@ Delta = as.numeric(Y<C)
 data.id = data.frame(ID=1:n,fstat=Delta,ftime=U, x=x)
 
 
-len = 0.1
+len = 0.2 # the interval between each time points, also known as delta
 #S = sapply(1:n,function(i){c(0,sort(runif(mmm-1,0,1))) })
 data = lapply(1:n,function(i){
   
