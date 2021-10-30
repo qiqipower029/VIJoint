@@ -80,10 +80,10 @@ SS = data.id[match(data$ID,data.id$ID),'ftime']
 data = data[data$years<SS,]
 
 
-LongData = data
-SurvData = data.id
+LongData_s1 = data
+SurvData_s1 = data.id
 save(LongData, SurvData, 
-     file='JMtest.RData')
+     file='simu_s1.RData')
 
 # JM data generation
 marker.name = sort(unique(LongData$item))
@@ -104,4 +104,4 @@ for (i in 1:n){
   colnames(wideSurvData)=colnames(SurvData) # ID, fstat, ftime, x
   WideData[[i]]=cbind(rest,wideData,wideSurvData)
 }
-data.JM=data.frame(do.call(rbind,WideData))
+data.JM_s1 = data.frame(do.call(rbind,WideData))
