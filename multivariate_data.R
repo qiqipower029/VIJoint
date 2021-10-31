@@ -6,6 +6,7 @@ require(JM)
 require(Matrix)
 require(statmod)
 require(MASS)
+require(openxlsx)
 
 #-------------------------Scenario 1-------------------------#
 # n = 500, 1500, 5000
@@ -23,8 +24,8 @@ theta = 10 # Weibull parameter
 Sig = 0.5 # sd for MVN Sigma
 
 Sigma = Sig^2*diag(2) # variance-covariance matrix of betas for each subject
-
-set.seed(2021) # seed setting makes the simulation data reproducible
+k = 1
+while (k<=100) {
 
 AB1.list = lapply(1:n,function(i){
   matrix(mvrnorm(n = 1, rep(1.5, 2), Sigma = Sigma), nrow = Ngene)
@@ -35,6 +36,7 @@ Y = rep(0,n)
 x = runif(n,-1,1)
 beta = 1
 
+tryCatch({
 for(i in 1:n){
   AB1 = AB1.list[[i]][1,]
   Atrue = AB1[[1]]
@@ -78,12 +80,13 @@ data = cbind(data,value)
 
 SS = data.id[match(data$ID,data.id$ID),'ftime']
 data = data[data$years<SS,]
-
+}, error = function(e){})
 
 LongData = data
 SurvData = data.id
-save(LongData, SurvData, 
-     file='simu_s1_500.RData')
+
+write.xlsx(LongData, file = paste0('longdata_s1',k,'.xlsx'))
+write.xlsx(SurvData, file = paste0('survdata_s1',k,'.xlsx'))
 
 # JM and mjoint data generation
 marker.name = sort(unique(LongData$item))
@@ -105,7 +108,11 @@ for (i in 1:n){
   WideData[[i]]=cbind(rest,wideData,wideSurvData)
 }
 data.mjoint = data.frame(do.call(rbind,WideData))
-save(data.mjoint, file = 'mjoint_s1_500.RData')
+save(data.mjoint, file = paste0('mjoint_s1',k, '.RData'))
+k = k+1
+}
+
+
 
 #-------------------------Scenario 2-------------------------#
 # n = 500
@@ -113,7 +120,7 @@ save(data.mjoint, file = 'mjoint_s1_500.RData')
 # Sigma = 0.5^2I
 
 sig = 0.1 # sd for epsilon
-Ngene = 3 # number of genes
+Ngene = 8 # number of genes
 Ninfo = Ngene # signal=Ngene, no noise
 eff = 1  # gene coefficients, true value of gam.y=1, gam.v=1
 n = 500 # number of subjects
@@ -122,8 +129,8 @@ theta = 10 # Weibull parameter
 Sig = 0.5 # sd for MVN Sigma
 
 Sigma = Sig^2*diag(2) # variance-covariance matrix of betas for each subject
-
-set.seed(2021) # seed setting makes the simulation data reproducible
+k = 1
+while (k<=100) {
 
 AB1.list = lapply(1:n,function(i){
   matrix(mvrnorm(n = Ngene, rep(1.5, 2), Sigma = Sigma), nrow = Ngene)
@@ -134,6 +141,7 @@ Y = rep(0,n)
 x = runif(n,-1,1)
 beta = 1
 
+tryCatch({
 for(i in 1:n){
   AB1 = AB1.list[[1]][1:Ninfo,]
   Atrue = sum(AB1[,1]) # summation of random intercept
@@ -172,12 +180,14 @@ data = cbind(data,value)
 
 SS = data.id[match(data$ID,data.id$ID),'ftime']
 data = data[data$years<SS,]
-
+}, error = function(e){})
 
 LongData = data
 SurvData = data.id
-save(LongData, SurvData, 
-     file='simu_s2_3.RData')
+
+write.xlsx(LongData, file = paste0('longdata_s2',k,'.xlsx'))
+write.xlsx(SurvData, file = paste0('survdata_s2',k,'.xlsx'))
+
 
 # JM and mjoint data generation
 marker.name = sort(unique(LongData$item))
@@ -199,8 +209,10 @@ for (i in 1:n){
   WideData[[i]]=cbind(rest,wideData,wideSurvData)
 }
 data.mjoint = data.frame(do.call(rbind,WideData))
-save(data.mjoint, file = 'mjoint_s2_3.RData')
+save(data.mjoint, file = paste0('mjoint_s2',k,'.RData'))
 
+k = k + 1
+}
 
 #-------------------------Scenario 3-------------------------#
 # n = 500
@@ -227,8 +239,9 @@ ar1_cor <- function(n, rho) {
 
 Sigma = Sig^2*ar1_cor(2, 0.5)
 
+for (k in 1:100) {
 
-set.seed(2021) # seed setting makes the simulation data reproducible
+set.seed(k) # seed setting makes the simulation data reproducible
 
 AB1.list = lapply(1:n,function(i){
   matrix(mvrnorm(n = Ngene, rep(1.5, 2), Sigma = Sigma), nrow = Ngene)
@@ -281,8 +294,8 @@ data = data[data$years<SS,]
 
 LongData = data
 SurvData = data.id
-save(LongData, SurvData, 
-     file='simu_s3.RData')
+write.xlsx(LongData, file = paste0('longdata_s3',k,'.xlsx'))
+write.xlsx(SurvData, file = paste0('survdata_s3',k,'.xlsx'))
 
 # JM and mjoint data generation
 marker.name = sort(unique(LongData$item))
@@ -304,4 +317,5 @@ for (i in 1:n){
   WideData[[i]]=cbind(rest,wideData,wideSurvData)
 }
 data.mjoint = data.frame(do.call(rbind,WideData))
-save(data.mjoint, file = 'mjoint_s3.RData')
+save(data.mjoint, file = paste0('mjoint_s3_', k, '.RData'))
+}
