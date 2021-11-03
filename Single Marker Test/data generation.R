@@ -90,3 +90,6 @@ for (i in 1:n){
   WideData[[i]]=cbind(rest,wideData,wideSurvData)
 }
 data.JM=data.frame(do.call(rbind,WideData))
+
+
+
