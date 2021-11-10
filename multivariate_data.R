@@ -69,7 +69,7 @@ data = lapply(1:n,function(i){
 }
   years = rep(ss,Ngene)
   item = rep(paste("gene",1:Ngene,sep=""),each=length(ss))
-  ABtmp = AB1.list[[i]][rep(1:Ngene,each=length(ss)),]
+  ABtmp = AB1.list[[i]][rep(1:Ngene,each=length(ss)),,drop = F]
   
   data.frame(ID=i,item=item,years=years,AB=ABtmp)
 })
