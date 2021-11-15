@@ -163,9 +163,15 @@ len = 0.2 # the interval between each time points, also known as delta
 #S = sapply(1:n,function(i){c(0,sort(runif(mmm-1,0,1))) })
 data = lapply(1:n,function(i){
   
-  ss=seq(0,data.id$ftime[i],by=len)
-  ss = jitter(ss)
-  ss[1]=0
+  if(data.id$ftime[i] <= len) {
+    ss = c(0, len)
+    ss = jitter(ss)
+    ss[1]=0
+  } else {
+    ss=seq(0,data.id$ftime[i],by=len)
+    ss = jitter(ss)
+    ss[1]=0
+  }
   
   years = rep(ss,Ngene)
   item = rep(paste("gene",1:Ngene,sep=""),each=length(ss))
@@ -272,11 +278,15 @@ data.id = data.frame(ID=1:n,fstat=Delta,ftime=U, x=x)
 len = 0.2 # the interval between each time points, also known as delta
 #S = sapply(1:n,function(i){c(0,sort(runif(mmm-1,0,1))) })
 data = lapply(1:n,function(i){
-  
-  ss=seq(0,data.id$ftime[i],by=len)
-  ss = jitter(ss)
-  ss[1]=0
-  
+  if(data.id$ftime[i] <= len) {
+    ss = c(0, len)
+    ss = jitter(ss)
+    ss[1]=0
+  } else {
+    ss=seq(0,data.id$ftime[i],by=len)
+    ss = jitter(ss)
+    ss[1]=0
+  }
   years = rep(ss,Ngene)
   item = rep(paste("gene",1:Ngene,sep=""),each=length(ss))
   ABtmp = AB1.list[[i]][rep(1:Ngene,each=length(ss)),]

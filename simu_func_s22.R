@@ -9,6 +9,7 @@ require(joineRML)
 require(openxlsx)
 
 source(file = "VBJM_help.R")
+setwd('/home/jtu22/VBJM/test_data/S2/S2_2/')
 
 # ----------- Create simulation functions--------------# 
 VBJM_sim = function(n.sim, scenario) {
@@ -28,14 +29,14 @@ VBJM_sim = function(n.sim, scenario) {
     cover = numeric(n.sim)
   )
   
-  
+  time = numeric(n.sim)
   for (i in 1:n.sim) {
     LongData = readxl::read_excel(path = paste0('longdata_s', scenario, i, '.xlsx'))
     SurvData = readxl::read_excel(path = paste0('survdata_s', scenario, i, '.xlsx'))
     init_list = VBJM_init(LongData=LongData, SurvData=SurvData, n_points=5)
-    time = system.time({
+    time[i] = system.time({
     res = VBJM(init_list$data.list,  init_list$para.list, 100, 1e-5)
-    })
+    })[2]
     res_summary = VBJM_get_summary(marker.name =init_list$marker.name, res=res)
     
     # store the results for each iteration
@@ -67,7 +68,7 @@ VBJM_sim = function(n.sim, scenario) {
     alpha1_RMSE = sqrt(mean((est_alpha1[,1]-1)^2)),
     gamma_cp = mean(est_gamma[,5])*100,
     alpha1_cp = mean(est_alpha1[,5])*100,
-    time_used = mean(time[2])
+    time_used = mean(time)
   )
   
   write.xlsx(VBJM_result, file = "VBJM.xlsx")
@@ -92,6 +93,8 @@ JM_sim = function(n.sim, scenario) {
     cover = rep(NA, n.sim)
   )
   
+  time = numeric(n.sim)
+  tryCatch({
   for (i in 1:n.sim) {
     LongData = readxl::read_excel(path = paste0('longdata_s', scenario, i, '.xlsx'))
     SurvData = readxl::read_excel(path = paste0('survdata_s', scenario, i, '.xlsx'))
@@ -99,10 +102,11 @@ JM_sim = function(n.sim, scenario) {
     fitLME = lme(value ~ years ,  random = ~ years | ID,
                  data = LongData, control=lmeControl(opt='optim'))
     fitSURV = survreg(Surv(ftime, fstat) ~  x, data = SurvData, x = TRUE)
-    
-    time = system.time({
-    fitJOINT = jointModel(fitLME, fitSURV, timeVar = "years") 
-    })
+   
+    time[i] = system.time({
+
+    fitJOINT = jointModel(fitLME, fitSURV, timeVar = "years")
+    })[2]
     res = summary(fitJOINT)
     
     for (j in 1:2) {
@@ -124,7 +128,7 @@ JM_sim = function(n.sim, scenario) {
       est_alpha1[i, 5] = 1
     } else est_alpha1[i, 5] = 0
     
-  }
+  }}, error=function(e){})
   
   # write the result
   JM_result = data.frame(
@@ -138,7 +142,7 @@ JM_sim = function(n.sim, scenario) {
     alpha1_RMSE = sqrt(mean((est_alpha1[,1]-1)^2)),
     gamma_cp = mean(est_gamma[,5])*100,
     alpha1_cp = mean(est_alpha1[,5])*100,
-    time_used = mean(time[2])
+    time_used = mean(time)
   )
   
   write.xlsx(JM_result, file = "JM.xlsx")
@@ -162,24 +166,32 @@ joineRML_sim = function(n.sim, scenario) {
     ci_high = rep(NA, n.sim),
     cover = rep(NA, n.sim)
   )
-  
-  
+  time = numeric(n.sim)
+  tryCatch({
   for (i in 1:n.sim) {
     # read in data
     load(paste0('mjoint_s', scenario, i, '.RData'))
     
-    time = system.time({
+    time[i] = system.time({
     simu.fit = mjoint(
       formLongFixed = list(
-        "gene1" = gene1 ~ years
+        "gene1" = gene1 ~ years,
+        "gene2" = gene2 ~ years,
+        "gene3" = gene1 ~ years,
+        "gene4" = gene4 ~ years,
+        "gene5" = gene5 ~ years
       ),
       formLongRandom = list(
-        "gene1" = ~ years|ID
+        "gene1" = ~ years|ID,
+        "gene2" = ~ years|ID,
+        "gene3" = ~ years|ID,
+        "gene4" = ~ years|ID,
+        "gene5" = ~ years|ID
       ),
       formSurv = Surv(ftime, fstat) ~ x,
       data = data.mjoint,
       timeVar = "years"
-    )})
+    )})[2]
     
     res = summary(simu.fit)
     
@@ -202,7 +214,7 @@ joineRML_sim = function(n.sim, scenario) {
       est_alpha1[i, 5] = 1
     } else est_alpha1[i, 5] = 0
   
-  }
+  }}, error=function(e){})
   
   # write the result
   joineRML_result = data.frame(
@@ -216,14 +228,14 @@ joineRML_sim = function(n.sim, scenario) {
     alpha1_RMSE = sqrt(mean((est_alpha1[,1]-1)^2)),
     gamma_cp = mean(est_gamma[,5])*100,
     alpha1_cp = mean(est_alpha1[,5])*100,
-    time_used = mean(time[2])
+    time_used = mean(time)
   )
   
-  write.xlsx(JM_result, file = "joineRML.xlsx")
+  write.xlsx(joineRML_result, file = "joineRML.xlsx")
   
 }
 
 
-VBJM_sim(n.sim = 3, scenario = 1)
-JM_sim(n.sim = 100, scenario = 1)
-joineRML_sim(n.sim = 100, scenario = 1)
+VBJM_sim(n.sim = 100, scenario = 2)
+JM_sim(n.sim = 100, scenario = 2)
+joineRML_sim(n.sim = 100, scenario = 2)
